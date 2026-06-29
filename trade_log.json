@@ -1,0 +1,10 @@
+[
+    {
+        "market": "XAU/USD",
+        "signal": "SELL",
+        "confidence": 62.5,
+        "entry": 4042.42,
+        "sl": 4055.41,
+        "tp": 4016.44
+    }
+]
