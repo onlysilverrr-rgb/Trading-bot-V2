@@ -8,7 +8,7 @@ API_KEY = "c904e762f19c431699d0e541086c7772"
 # TELEGRAM
 # ===========================
 
-BOT_TOKEN = "8923091994:AAF4maOLBRZ7oHgxtaWzxTASphD_6TcA_Zs"
+BOT_TOKEN = "8923091994:AAFSi_CgqWdqThlWCsULV6N4HtxaLmqqPaE"
 CHAT_ID = "7600946626"
 
 # ===========================
