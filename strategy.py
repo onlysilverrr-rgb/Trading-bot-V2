@@ -7,6 +7,9 @@ from news_filter import is_high_impact_news_time
 
 def generate_signal(df15, df1h):
 
+    # =========================
+    # NEWS FILTER
+    # =========================
     news_block, _ = is_high_impact_news_time()
 
     if news_block:
@@ -20,7 +23,7 @@ def generate_signal(df15, df1h):
     reasons = []
 
     # =========================
-    # STRUCTURE (FIXED CONFLICTS)
+    # MARKET STRUCTURE (FIXED)
     # =========================
     bos_up, bos_down = detect_structure(df15)
 
@@ -32,7 +35,7 @@ def generate_signal(df15, df1h):
         reasons.append("Break of Structure DOWN")
 
     # =========================
-    # LIQUIDITY
+    # LIQUIDITY SWEEP
     # =========================
     sweep_up, sweep_down = detect_liquidity_sweep(df15)
 
@@ -68,19 +71,19 @@ def generate_signal(df15, df1h):
         reasons.append("Bearish FVG")
 
     # =========================
-    # TREND (FIXED HIERARCHY)
+    # TREND (HIERARCHY FIXED)
     # =========================
-    h1_buy = row1h["EMA20"] > row1h["EMA50"]
-    m15_buy = row15["EMA20"] > row15["EMA50"]
+    h1_bull = row1h["EMA20"] > row1h["EMA50"]
+    m15_bull = row15["EMA20"] > row15["EMA50"]
 
-    if h1_buy:
-        buy_score += 20
+    if h1_bull:
+        buy_score += 25
         reasons.append("1H Uptrend")
     else:
-        sell_score += 20
+        sell_score += 25
         reasons.append("1H Downtrend")
 
-    if m15_buy:
+    if m15_bull:
         buy_score += 10
         reasons.append("15M Bullish")
     else:
@@ -122,7 +125,7 @@ def generate_signal(df15, df1h):
         reasons.append("Strong Trend")
 
     # =========================
-    # BOLLINGER
+    # BOLLINGER BANDS
     # =========================
     if row15["close"] <= row15["BB_LOWER"]:
         buy_score += 5
@@ -130,7 +133,7 @@ def generate_signal(df15, df1h):
         sell_score += 5
 
     # =========================
-    # SUPPORT/RESISTANCE
+    # SUPPORT / RESISTANCE
     # =========================
     support, resistance = get_support_resistance(df15)
 
@@ -140,14 +143,16 @@ def generate_signal(df15, df1h):
         sell_score += 10
 
     # =========================
-    # FINAL SCORE
+    # FINAL DECISION + CONFIDENCE FIX
     # =========================
     total = buy_score + sell_score
 
     if total == 0:
         confidence = 0
     else:
-        confidence = round((max(buy_score, sell_score) / total) * 100, 2)
+        dominance = abs(buy_score - sell_score)
+        confidence = round((max(buy_score, sell_score) / total) * 100 + (dominance * 0.4), 2)
+        confidence = min(confidence, 95)
 
     signal = "BUY" if buy_score > sell_score else "SELL"
 
@@ -155,7 +160,7 @@ def generate_signal(df15, df1h):
         signal = "HOLD"
 
     # =========================
-    # PRICING (FIX FLOAT BUG)
+    # PRICE CALCULATION (FIXED FLOATS)
     # =========================
     if signal == "HOLD":
         return signal, confidence, reasons, None, None, None
