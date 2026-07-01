@@ -15,7 +15,6 @@ def generate_signal(df15, df1h):
     # =========================
     # NEWS FILTER
     # =========================
-
     news_block, _ = is_high_impact_news_time()
 
     if news_block:
@@ -31,7 +30,6 @@ def generate_signal(df15, df1h):
     # =========================
     # MARKET STRUCTURE (BOS)
     # =========================
-
     bos_up, bos_down = detect_structure(df15)
 
     if bos_up:
@@ -43,9 +41,8 @@ def generate_signal(df15, df1h):
         reasons.append("Break of Structure DOWN")
 
     # =========================
-    # LIQUIDITY SWEEP FILTER
+    # LIQUIDITY SWEEP
     # =========================
-
     sweep_up, sweep_down = detect_liquidity_sweep(df15)
 
     if sweep_up:
@@ -59,7 +56,6 @@ def generate_signal(df15, df1h):
     # =========================
     # ORDER BLOCKS
     # =========================
-
     bull_ob, bear_ob = detect_order_block(df15)
 
     if bull_ob:
@@ -71,9 +67,8 @@ def generate_signal(df15, df1h):
         reasons.append("Bearish Order Block")
 
     # =========================
-    # FAIR VALUE GAP (FVG)
+    # FVG
     # =========================
-
     bull_fvg, bear_fvg = detect_fvg(df15)
 
     if bull_fvg:
@@ -87,7 +82,6 @@ def generate_signal(df15, df1h):
     # =========================
     # 1H TREND
     # =========================
-
     if row1h["EMA20"] > row1h["EMA50"]:
         buy_score += 20
         reasons.append("1H Uptrend")
@@ -98,7 +92,6 @@ def generate_signal(df15, df1h):
     # =========================
     # 15M TREND
     # =========================
-
     if row15["EMA20"] > row15["EMA50"]:
         buy_score += 20
         reasons.append("15M Bullish")
@@ -107,9 +100,8 @@ def generate_signal(df15, df1h):
         reasons.append("15M Bearish")
 
     # =========================
-    # EMA200 FILTER
+    # EMA200
     # =========================
-
     if row15["close"] > row15["EMA200"]:
         buy_score += 10
     else:
@@ -118,7 +110,6 @@ def generate_signal(df15, df1h):
     # =========================
     # MACD
     # =========================
-
     if row15["MACD"] > row15["MACD_SIGNAL"]:
         buy_score += 15
     else:
@@ -127,28 +118,24 @@ def generate_signal(df15, df1h):
     # =========================
     # RSI
     # =========================
-
     if row15["RSI"] < 35:
         buy_score += 10
     elif row15["RSI"] > 65:
         sell_score += 10
 
     # =========================
-    # ADX FILTER
+    # ADX
     # =========================
-
     if row15["ADX"] >= 25:
         if buy_score > sell_score:
             buy_score += 10
         else:
             sell_score += 10
-
         reasons.append("Strong Trend")
 
     # =========================
     # BOLLINGER BANDS
     # =========================
-
     if row15["close"] <= row15["BB_LOWER"]:
         buy_score += 5
     elif row15["close"] >= row15["BB_UPPER"]:
@@ -157,7 +144,6 @@ def generate_signal(df15, df1h):
     # =========================
     # SUPPORT / RESISTANCE
     # =========================
-
     support, resistance = get_support_resistance(df15)
 
     if is_breakout(df15, resistance):
@@ -170,7 +156,12 @@ def generate_signal(df15, df1h):
     # FINAL DECISION
     # =========================
 
-    confidence = (buy_score + sell_score) / 2
+    total = buy_score + sell_score
+
+    if total == 0:
+        confidence = 0
+    else:
+        confidence = round((max(buy_score, sell_score) / total) * 100, 2)
 
     if buy_score > sell_score:
         signal = "BUY"
@@ -183,20 +174,20 @@ def generate_signal(df15, df1h):
         signal = "HOLD"
 
     # =========================
-    # RISK MANAGEMENT
+    # RISK MANAGEMENT (FIXED PRECISION)
     # =========================
 
     if signal == "HOLD":
-        return signal, 0, reasons, None, None, None
+        return signal, confidence, reasons, None, None, None
 
-    entry = round(row15["close"], 2)
-    atr = row15["ATR"]
+    entry = round(float(row15["close"]), 5)
+    atr = float(row15["ATR"])
 
     if signal == "BUY":
-        sl = round(entry - atr * 1.5, 2)
-        tp = round(entry + atr * 3, 2)
+        sl = entry - atr * 1.8
+        tp = entry + atr * 3.0
     else:
-        sl = round(entry + atr * 1.5, 2)
-        tp = round(entry - atr * 3, 2)
+        sl = entry + atr * 1.8
+        tp = entry - atr * 3.0
 
     return signal, confidence, reasons, entry, sl, tp
